@@ -269,6 +269,10 @@ install_package_osu() {
 	package_build_extra_options="$(get_libtool_gpu_conf) CFLAGS=-I${pkg_info_mpi['prefix']}/include LDFLAGS=-L${pkg_info_mpi['prefix']}/lib CC=${pkg_info_mpi['CC']} CXX=${pkg_info_mpi['CXX']} F77=${pkg_info_mpi['F77']} FC=${pkg_info_mpi['FC']}"
 	package_tar_rename=""
 
+	if [[ ! -z $gpu_arch ]]; then
+		package_build_extra_options+=" --enable-cuda "
+	fi
+
 	# ${pkg_info_mpi['prefix']}/bin/
 	# We can add --with-rccl and --with-nccl
 	libtool_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename
@@ -283,11 +287,21 @@ install_package_imb() {
 	package_sub_version=$3
 	package_prefix=$4
 	package_url=https://github.com/intel/mpi-benchmarks/archive/refs/tags/IMB-v$package_version.$package_sub_version.tar.gz
-	package_build_extra_options="INSTALL_DIR=$package_prefix/asd CFLAGS=-I${pkg_info_mpi['prefix']}/include LDFLAGS=-L${pkg_info_mpi['prefix']}/lib CC=${pkg_info_mpi['CC']} CXX=${pkg_info_mpi['CXX']} F77=${pkg_info_mpi['F77']} FC=${pkg_info_mpi['FC']}"
+	package_build_extra_options="LDFLAGS=-L${pkg_info_mpi['prefix']}/lib CC=${pkg_info_mpi['CC']} CXX=${pkg_info_mpi['CXX']} F77=${pkg_info_mpi['F77']} FC=${pkg_info_mpi['FC']}"
 	package_tar_rename="mpi-benchmarks-IMB-v$package_version.$package_sub_version"
 
 	mkdir -p $package_prefix/bin
 	make_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename
 	cp IMB-EXT IMB-MPI1 IMB-NBC IMB-RMA IMB-IO IMB-MT IMB-P2P $package_prefix/bin
-}
 
+	if [[ ! -z $gpu_arch ]]; then
+		echo -e "\n\t- Install IMB-MPI1-GPU"
+		if [[ ! -z $gpu_path ]]; then
+			package_build_extra_options="IMB-MPI1-GPU CFLAGS=-Wno-error=unused-value CUDA_INCLUDE_DIR=$gpu_path/include "$package_build_extra_options
+		else
+			package_build_extra_options="IMB-MPI1-GPU CFLAGS=-Wno-error=unused-value CUDA_INCLUDE_DIR=/usr/local/cuda/include "$package_build_extra_options
+		fi
+		make_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename
+		cp IMB-MPI1-GPU $package_prefix/bin
+	fi
+}

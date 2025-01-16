@@ -9,7 +9,7 @@ fortran_compiler="gfortran"
 gpu_arch=""
 gpu_path=""
 
-log_file_name=installer.log
+log_file_name=hpcinstaller.log
 deps_source_dir_name=build/$(uname)-$ID${VERSION_ID%.*}-$(arch)
 deps_install_relative_path=install/$(uname)-$ID${VERSION_ID%.*}-$(arch)
 THIS_PATH=`pwd`
