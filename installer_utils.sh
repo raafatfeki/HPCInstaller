@@ -7,7 +7,7 @@ mpi_flavor="openmpi"
 compiler="gcc"
 fortran_compiler="gfortran"
 gpu_arch=""
-gpu_path=""
+gpu_path="/usr/local/cuda"
 
 log_file_name=hpcinstaller.log
 deps_source_dir_name=build/$(uname)-$ID${VERSION_ID%.*}-$(arch)
@@ -42,10 +42,14 @@ declare -A pkg_info_netcdf_fortran=(["version"]="4.6" ["sub_version"]="1")
 declare -A pkg_info_netcdf=(["version"]="4.9" ["sub_version"]="4.6")
 declare -A pkg_info_madmpi=(["version"]="0" ["sub_version"]="4")
 declare -A pkg_info_autoconf=(["version"]="2" ["sub_version"]="72e")
+declare -A pkg_info_json_fortran=(["version"]="9.0" ["sub_version"]="1")
+declare -A pkg_info_lapack=(["version"]="3.12" ["sub_version"]="0")
+
 
 # Benchmarks
 declare -A pkg_info_osu=(["version"]="7" ["sub_version"]="4")
 declare -A pkg_info_imb=(["version"]="2021" ["sub_version"]="8")
+declare -A pkg_info_neko=(["version"]="0.9" ["sub_version"]="1")
 
 # NCCL-Based
 declare -A pkg_info_nccl=(["version"]="2.23" ["sub_version"]="4-1")
@@ -345,9 +349,30 @@ export_package () {
 	if [[ -d "$package_prefix/lib" ]]; then
 		LOCAL_LD_LIBRARY_PATH=$package_prefix/lib:$LOCAL_LD_LIBRARY_PATH
 		export LD_LIBRARY_PATH=$package_prefix/lib:$LD_LIBRARY_PATH
-	elif [[ -d "$package_prefix/lib64" ]]; then
+		if [[ -d "$package_prefix/lib/pkgconfig" ]]; then
+			LOCAL_PKG_CONFIG_PATH=$package_prefix/lib/pkgconfig:$LOCAL_PKG_CONFIG_PATH
+			export PKG_CONFIG_PATH=$package_prefix/lib/pkgconfig:$PKG_CONFIG_PATH
+		fi
+	fi
+	if [[ -d "$package_prefix/lib64" ]]; then
 		LOCAL_LD_LIBRARY_PATH=$package_prefix/lib64:$LOCAL_LD_LIBRARY_PATH
 		export LD_LIBRARY_PATH=$package_prefix/lib64:$LD_LIBRARY_PATH
+		if [[ -d "$package_prefix/lib64/pkgconfig" ]]; then
+			LOCAL_PKG_CONFIG_PATH=$package_prefix/lib64/pkgconfig:$LOCAL_PKG_CONFIG_PATH
+			export PKG_CONFIG_PATH=$package_prefix/lib64/pkgconfig:$PKG_CONFIG_PATH
+		fi
+	fi
+}
+
+get_lib() {
+	prefix=$1
+	lib_name=$2
+	if [[ -f "$prefix/lib/$lib_name" ]]; then
+		echo $prefix/lib
+	elif [[ -f "$prefix/lib64/$lib_name" ]]; then
+		echo $prefix/lib64
+	else
+		printError "Library $lib_name not found under $prefix/[lib/lib64]"
 	fi
 }
 
@@ -357,6 +382,7 @@ cat << EOF  > $1
 #
 export PATH=$LOCAL_PATH:\$PATH
 export LD_LIBRARY_PATH=$LOCAL_LD_LIBRARY_PATH:\$LD_LIBRARY_PATH
+export PKG_CONFIG_PATH=$LOCAL_PKG_CONFIG_PATH:\$PKG_CONFIG_PATH
 
 EOF
 }
@@ -548,6 +574,13 @@ libtool_install() {
 	echo -e "\t\t* make install"
 	make install >> $log_file 2>&1 
 	[ $? != 0 ] && printError "make install" && exit
+}
+
+pkg_requires() {
+	for arg in "$@"; do
+		which $arg 2> /dev/null
+		[ $? != 0 ] && printError "This Package requires $arg." && exit
+	done
 }
 
 source `dirname $0`/packages.sh

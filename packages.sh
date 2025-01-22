@@ -305,3 +305,54 @@ install_package_imb() {
 		cp IMB-MPI1-GPU $package_prefix/bin
 	fi
 }
+
+install_package_json_fortran() {
+	package_name=$1
+	package_version=$2
+	package_sub_version=$3
+	package_prefix=$4
+	package_url=https://github.com/jacobwilliams/json-fortran/archive/refs/tags/$package_version.$package_sub_version.tar.gz
+	package_build_extra_options="-DUSE_GNU_INSTALL_CONVENTION=ON"
+	package_tar_rename="json-fortran-$package_version.$package_sub_version"
+
+	pkg_requires "cmake"
+	cmake_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename
+}
+
+install_package_lapack() {
+	package_name=$1
+	package_version=$2
+	package_sub_version=$3
+	package_prefix=$4
+	package_url="https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v$package_version.$package_sub_version.tar.gz"
+	cmake_extra_options="None"
+	package_tar_rename="$package_name-$package_version.$package_sub_version"
+
+	cmake_install $package_name $package_prefix $package_url "$cmake_extra_options" $package_tar_rename
+}
+
+install_package_neko() {
+	package_name=$1
+	package_version=$2
+	package_sub_version=$3
+	package_prefix=$4
+	package_url=https://github.com/ExtremeFLOW/neko/releases/download/v$package_version.$package_sub_version/neko-$package_version.$package_sub_version.tar.gz
+	package_build_extra_options="$(get_libtool_gpu_conf) --with-lapack=$(get_lib ${pkg_info_lapack['prefix']} liblapack.a)/liblapack.a  --with-blas=$(get_lib ${pkg_info_lapack['prefix']} libblas.a)/libblas.a --enable-device-mpi CFLAGS=-I${pkg_info_mpi['prefix']}/include LDFLAGS=-L${pkg_info_mpi['prefix']}/lib CC=gcc MPICC=${pkg_info_mpi['CC']} MPIFC=${pkg_info_mpi['FC']} MPICXX=${pkg_info_mpi['CXX']} FC=gfortran FCFLAGS='-O2 -pedantic -std=f2008'"
+	package_tar_rename=""
+
+	# --enable-real=dp
+	# --with-blas=
+	# --with-lapack=
+	# --with-cuda
+	# --with-nccl
+	# --with-rccl
+	# --with-hdf5
+	pkg_requires "mpicc"
+
+
+	if [[ ! -z $gpu_arch && ! -z ${gpu_map[$gpu_arch]} ]]; then
+		package_build_extra_options+=" CUDA_CFLAGS=-O3 CUDA_ARCH=-arch=sm_${gpu_map[$gpu_arch]} NVCC=$gpu_path/bin/nvcc "
+	fi
+
+	libtool_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename
+}
