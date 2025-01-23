@@ -315,7 +315,7 @@ install_package_json_fortran() {
 	package_build_extra_options="-DUSE_GNU_INSTALL_CONVENTION=ON"
 	package_tar_rename="json-fortran-$package_version.$package_sub_version"
 
-	pkg_requires "cmake"
+	pkg_requires_bin "cmake"
 	cmake_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename
 }
 
@@ -331,13 +331,28 @@ install_package_lapack() {
 	cmake_install $package_name $package_prefix $package_url "$cmake_extra_options" $package_tar_rename
 }
 
+install_package_gslib() {
+	pkg_requires_pkgs "mpi"
+	package_name=$1
+	package_version=$2
+	package_sub_version=$3
+	package_prefix=$4
+	package_url="https://github.com/Nek5000/gslib/archive/refs/tags/v$package_version.$package_sub_version.tar.gz"
+	cmake_extra_options="DESTDIR=${package_prefix} MPI=1 CC=${pkg_info_mpi['CC']}"
+	package_tar_rename="$package_name-$package_version.$package_sub_version"
+
+	make_install $package_name $package_prefix $package_url "$cmake_extra_options" $package_tar_rename
+}
+
 install_package_neko() {
+	pkg_requires_pkgs "mpi" "lapack" "gslib" "json_fortran"
+
 	package_name=$1
 	package_version=$2
 	package_sub_version=$3
 	package_prefix=$4
 	package_url=https://github.com/ExtremeFLOW/neko/releases/download/v$package_version.$package_sub_version/neko-$package_version.$package_sub_version.tar.gz
-	package_build_extra_options="$(get_libtool_gpu_conf) --with-lapack=$(get_lib ${pkg_info_lapack['prefix']} liblapack.a)/liblapack.a  --with-blas=$(get_lib ${pkg_info_lapack['prefix']} libblas.a)/libblas.a --enable-device-mpi CFLAGS=-I${pkg_info_mpi['prefix']}/include LDFLAGS=-L${pkg_info_mpi['prefix']}/lib CC=gcc MPICC=${pkg_info_mpi['CC']} MPIFC=${pkg_info_mpi['FC']} MPICXX=${pkg_info_mpi['CXX']} FC=gfortran FCFLAGS='-O2 -pedantic -std=f2008'"
+	package_build_extra_options="$(get_libtool_gpu_conf) --with-gslib=${pkg_info_gslib['prefix']} --with-lapack=$(get_lib ${pkg_info_lapack['prefix']} liblapack.a)/liblapack.a  --with-blas=$(get_lib ${pkg_info_lapack['prefix']} libblas.a)/libblas.a --enable-device-mpi CFLAGS=-I${pkg_info_mpi['prefix']}/include LDFLAGS=-L${pkg_info_mpi['prefix']}/lib CC=gcc MPICC=${pkg_info_mpi['CC']} MPIFC=${pkg_info_mpi['FC']} MPICXX=${pkg_info_mpi['CXX']} FC=gfortran FCFLAGS='-O2 -pedantic -std=f2008'"
 	package_tar_rename=""
 
 	# --enable-real=dp
@@ -347,8 +362,6 @@ install_package_neko() {
 	# --with-nccl
 	# --with-rccl
 	# --with-hdf5
-	pkg_requires "mpicc"
-
 
 	if [[ ! -z $gpu_arch && ! -z ${gpu_map[$gpu_arch]} ]]; then
 		package_build_extra_options+=" CUDA_CFLAGS=-O3 CUDA_ARCH=-arch=sm_${gpu_map[$gpu_arch]} NVCC=$gpu_path/bin/nvcc "
@@ -356,3 +369,52 @@ install_package_neko() {
 
 	libtool_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename
 }
+
+install_package_arrhenius_benchmarks() {
+	pkg_requires_pkgs "mpi" "lapack" "gslib" "json_fortran" "neko"
+	package_name=$1
+	package_version=$2
+	package_sub_version=$3
+	package_prefix=$4
+	package_url="https://github.com/PDC-support/arrhenius-benchmarks/archive/refs/heads/main.zip"
+	package_build_extra_options=
+	package_tar_rename="arrhenius-benchmarks-main"
+
+	download_untar_cd_package $package_url $package_tar_rename "zip"
+
+	build_path=`pwd`
+	echo -e "\t\t* Prepare module 1:"
+	echo -e "\t\t\t cd $build_path/Neko/tgv/module1"
+	cd $build_path/Neko/tgv/module1
+
+	echo -e "\t\t\t gunzip -c tgv_2M.nmsh.gz > tgv_2M.nmsh"
+	gunzip -c tgv_2M.nmsh.gz > tgv_2M.nmsh
+	[ $? != 0 ] && printError "gunzip -c tgv_2M.nmsh.gz > tgv_2M.nmsh" && exit
+
+	echo -e "\t\t\t makeneko tgv.f90"
+	makeneko tgv.f90 >> $log_file 2>&1
+	[ $? != 0 ] && printError "makeneko tgv.f90 in $build_path/Neko/tgv/module1" && exit
+
+
+	echo -e "\t\t* Prepare module 2:"
+	echo -e "\t\t\t cd $build_path/Neko/tgv/module2"
+	cd $build_path/Neko/tgv/module2
+
+	echo -e "\t\t\t wget tgv_16M.nmsh.gz"
+	wget -O tgv_16M.nmsh.gz "https://gitlab.com/ExtremeFLOW/neko_benchmarks/tgv/-/raw/main/tgv_16M.nmsh.gz?inline=false" >> $log_file 2>&1
+	[ $? != 0 ] && printError "wget tgv_16M.nmsh.gz" && exit
+
+	echo -e "\t\t\t gunzip -c tgv_16M.nmsh.gz > tgv_16M.nmsh"
+	gunzip -c tgv_16M.nmsh.gz > tgv_16M.nmsh
+	[ $? != 0 ] && printError "gunzip -c tgv_16M.nmsh.gz > tgv_16M.nmsh" && exit
+
+	echo -e "\t\t\t makeneko tgv.f90"
+	makeneko tgv.f90 >> $log_file 2>&1
+	[ $? != 0 ] && printError "makeneko tgv.f90 in $build_path/Neko/tgv/module2" && exit
+
+	echo -e "\t\t\t Copy to Installation Directory."
+	mkdir -p $package_prefix
+	cp -r $build_path/Neko $package_prefix
+}
+
+

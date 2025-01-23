@@ -44,12 +44,13 @@ declare -A pkg_info_madmpi=(["version"]="0" ["sub_version"]="4")
 declare -A pkg_info_autoconf=(["version"]="2" ["sub_version"]="72e")
 declare -A pkg_info_json_fortran=(["version"]="9.0" ["sub_version"]="1")
 declare -A pkg_info_lapack=(["version"]="3.12" ["sub_version"]="0")
-
+declare -A pkg_info_gslib=(["version"]="1" ["sub_version"]="0.9")
 
 # Benchmarks
 declare -A pkg_info_osu=(["version"]="7" ["sub_version"]="4")
 declare -A pkg_info_imb=(["version"]="2021" ["sub_version"]="8")
 declare -A pkg_info_neko=(["version"]="0.9" ["sub_version"]="1")
+declare -A pkg_info_arrhenius_benchmarks=(["version"]="X" ["sub_version"]="X")
 
 # NCCL-Based
 declare -A pkg_info_nccl=(["version"]="2.23" ["sub_version"]="4-1")
@@ -58,7 +59,6 @@ declare -A pkg_info_psm2_nccl=(["version"]="0.3" ["sub_version"]="0")
 declare -A pkg_info_aws_ofi_nccl=(["version"]="1.9" ["sub_version"]="2")
 
 # RCCL_based
-
 declare -A pkg_info_rccl=(["version"]="6.2" ["sub_version"]="2")
 declare -A pkg_info_rccl_tests=(["version"]="9" ["sub_version"]="19")
 # declare -A pkg_info_psm2_rccl=(["version"]="0.3" ["sub_version"]="0")
@@ -72,6 +72,7 @@ declare -A pkg_info_ucc=(["version"]="1.3" ["sub_version"]="0")
 declare -n pkg_info_mpi="pkg_info_${mpi_flavor}"
 declare -n pkg_info_compiler="pkg_info_${compiler}"
 
+# GPU Arch Map
 declare -A gpu_map=(["p100"]="60" ["gp100"]="60" ["a40"]="86" ["h100"]="90" ["h100"]="90" ["mi300x"]="x")
 
 set -o posix;
@@ -576,11 +577,46 @@ libtool_install() {
 	[ $? != 0 ] && printError "make install" && exit
 }
 
-pkg_requires() {
+pkg_requires_bin() {
 	for arg in "$@"; do
 		which $arg 2> /dev/null
 		[ $? != 0 ] && printError "This Package requires $arg." && exit
 	done
+}
+
+pkg_requires_pkgs() {
+	val=0
+	declare -a not_found_packages=()
+	for arg in "$@"; do
+		# Check GPU
+		if [[ $arg == "gpu" ]]; then
+			if [[ -z $gpu_arch ]]; then
+				printError "Please use --gpu option to define you GPU Arch and API path."
+				val=1
+			else
+				val=0
+			fi
+			continue
+		fi
+
+		# Regular Packages
+		declare -n pkg="pkg_info_${arg}"
+		if [[ ! -n ${pkg["version"]} || ! -n ${pkg["prefix"]} ]]; then
+			if [[ $arg == "mpi" ]]; then
+				printError "Please use --mpi option to define you MPI package or install it."
+				val=1
+				continue
+			fi
+			not_found_packages+=(${arg})
+		fi
+	done
+
+	if [[ ! ${#not_found_packages[@]} -eq 0 ]]; then
+		val=1
+		printError "These packages are required: \"${not_found_packages[@]}\".\n\tPlease add it/them to the list of packages to install (-i) or as external package(s) (-c)."
+	fi
+
+	[[ $val != 0 ]] && exit
 }
 
 source `dirname $0`/packages.sh
