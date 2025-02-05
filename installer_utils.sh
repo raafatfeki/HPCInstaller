@@ -45,6 +45,7 @@ declare -A pkg_info_autoconf=(["version"]="2" ["sub_version"]="72e")
 declare -A pkg_info_json_fortran=(["version"]="9.0" ["sub_version"]="1")
 declare -A pkg_info_lapack=(["version"]="3.12" ["sub_version"]="0")
 declare -A pkg_info_gslib=(["version"]="1" ["sub_version"]="0.9")
+declare -A pkg_info_parmetis=(["version"]="4" ["sub_version"]="0.3")
 
 # Benchmarks
 declare -A pkg_info_osu=(["version"]="7" ["sub_version"]="4")
@@ -56,7 +57,7 @@ declare -A pkg_info_arrhenius_benchmarks=(["version"]="X" ["sub_version"]="X")
 declare -A pkg_info_nccl=(["version"]="2.23" ["sub_version"]="4-1")
 declare -A pkg_info_nccl_tests=(["version"]="2.13" ["sub_version"]="10")
 declare -A pkg_info_psm2_nccl=(["version"]="0.3" ["sub_version"]="0")
-declare -A pkg_info_aws_ofi_nccl=(["version"]="1.9" ["sub_version"]="2")
+declare -A pkg_info_aws_ofi_nccl=(["version"]="1.13" ["sub_version"]="2")
 
 # RCCL_based
 declare -A pkg_info_rccl=(["version"]="6.2" ["sub_version"]="2")
@@ -233,6 +234,8 @@ set_paths() {
 	deps_tar_path=$root_path/tars/
 	if [[ $build_path == "" ]]; then
 		build_path=$root_path
+	else
+		build_path=${build_path}-${outputsuffix}
 	fi
 	deps_source_path=$build_path/$deps_source_dir_name
 	install_path=$root_path/$deps_install_relative_path
@@ -477,6 +480,32 @@ download_untar_cd_package() {
 	fi
 	echo -e " $package_dir"
 	cd $package_dir
+}
+
+make_config_install() {
+	package_name=$1
+	package_prefix=$2
+	package_url=$3
+	if [[ $4 == "None" ]]; then
+		make_extra_options=""
+	else
+		make_extra_options=$4
+	fi
+	package_tar_rename=$5
+
+	download_untar_cd_package $package_url $package_tar_rename
+
+	echo -e "\t\t* make config prefix=$package_prefix $make_extra_options"
+	make config prefix=$package_prefix $make_extra_options >> $log_file 2>&1
+	[ $? != 0 ] && printError "make config" && exit
+
+	echo -e "\t\t* make -j"
+	make -j  >> $log_file 2>&1
+	[ $? != 0 ] && printError "make" && exit
+
+	echo -e "\t\t* make install"
+	make install  >> $log_file 2>&1
+	[ $? != 0 ] && printError "make install" && exit
 }
 
 make_install() {
