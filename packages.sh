@@ -315,7 +315,7 @@ install_package_json_fortran() {
 	package_build_extra_options="-DUSE_GNU_INSTALL_CONVENTION=ON"
 	package_tar_rename="json-fortran-$package_version.$package_sub_version"
 
-	pkg_requires_bin "cmake"
+	pkg_requires_pkgs "cmake"
 	cmake_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename
 }
 
