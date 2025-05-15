@@ -186,7 +186,8 @@ install_package_rccl() {
 	package_url="https://github.com/ROCm/rccl/archive/refs/tags/rocm-$package_version.$package_sub_version.tar.gz"
 	package_tar_rename="rccl-rocm-$package_version.$package_sub_version"
 
-	download_untar_cd_package $package_url $package_tar_rename
+	# git clone --recursive -b rocm-$package_version.$package_sub_version https://github.com/ROCm/rccl.git
+	git_clone_cd_package $package_tar_rename https://github.com/ROCm/rccl.git rocm-$package_version.$package_sub_version
 	echo -e "\t\t* ./install.sh -i --prefix=$package_prefix -l -j $max_threads"
 
 	./install.sh -i --prefix=$package_prefix -l -j $max_threads  >> $log_file 2>&1 
@@ -216,10 +217,17 @@ install_package_aws_ofi_rccl() {
 	package_version=$2
 	package_sub_version=$3
 	package_prefix=$4
-	package_url="https://github.com/ROCm/aws-ofi-rccl/archive/refs/heads/cxi.zip"
-	package_build_extra_options="--with-libfabric=/usr/ --with-hip=$gpu_path --with-mpi=${pkg_info_mpi['prefix']} --with-rccl=${pkg_info_rccl['prefix']}"
-	package_tar_rename="aws-ofi-rccl-cxi"
+	#package_url="https://github.com/ROCm/aws-ofi-rccl/archive/refs/heads/cxi.zip"
+	package_url="https://github.com/cornelisnetworks/aws-ofi-rccl/archive/refs/heads/opx.zip"
+	package_build_extra_options="--with-hip=$gpu_path --with-mpi=${pkg_info_mpi['prefix']} --with-rccl=${pkg_info_rccl['prefix']}"
+	package_tar_rename="aws-ofi-rccl-opx"
 
+	package_build_extra_options+=" --with-libfabric="
+	if [[ -n ${pkg_info_libfabric["prefix"]} ]]; then
+		package_build_extra_options+="${pkg_info_libfabric["prefix"]}"
+	else
+		package_build_extra_options+="/usr"
+	fi
 
 	libtool_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename "zip"
 }
@@ -429,5 +437,32 @@ install_package_arrhenius_benchmarks() {
 	mkdir -p $package_prefix
 	cp -r $build_path/Neko $package_prefix
 }
+
+
+install_package_ior() {
+	pkg_requires_pkgs "mpi"
+	package_name=$1
+	package_version=$2
+	package_sub_version=$3
+	package_prefix=$4
+	package_url="https://github.com/hpc/ior/archive/refs/tags/$package_version.$package_sub_version.tar.gz"
+	package_build_extra_options="$(get_libtool_gpu_conf) -with-mpiio --with-posix LDFLAGS=-L${pkg_info_mpi['prefix']}/lib  CC=${pkg_info_mpi['CC']} MPICC=${pkg_info_mpi['CC']}"
+	package_tar_rename="ior-4.0.0"
+
+	# --with-gpuDirect --with-nvcc
+	# --with-hdf5
+
+	libtool_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename
+}
+
+
+
+
+
+
+
+
+
+
 
 

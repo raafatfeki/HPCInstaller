@@ -68,7 +68,7 @@ declare -A pkg_info_psm2_nccl=(["version"]="0.3" ["sub_version"]="0")
 declare -A pkg_info_aws_ofi_nccl=(["version"]="1.13" ["sub_version"]="2")
 
 # RCCL_based
-declare -A pkg_info_rccl=(["version"]="6.2" ["sub_version"]="2")
+declare -A pkg_info_rccl=(["version"]="6.3" ["sub_version"]="3")
 declare -A pkg_info_rccl_tests=(["version"]="9" ["sub_version"]="19")
 # declare -A pkg_info_psm2_rccl=(["version"]="0.3" ["sub_version"]="0")
 declare -A pkg_info_aws_ofi_rccl=(["version"]="1.9" ["sub_version"]="2")
@@ -76,6 +76,9 @@ declare -A pkg_info_aws_ofi_rccl=(["version"]="1.9" ["sub_version"]="2")
 # Infiniband
 declare -A pkg_info_ucx=(["version"]="1.17" ["sub_version"]="0")
 declare -A pkg_info_ucc=(["version"]="1.3" ["sub_version"]="0")
+
+# I/O Benchmarks
+declare -A pkg_info_ior=(["version"]="4.0" ["sub_version"]="0")
 
 # Generic
 declare -n pkg_info_mpi="pkg_info_${mpi_flavor}"
@@ -490,6 +493,28 @@ download_untar_cd_package() {
 	cd $package_dir
 }
 
+git_clone_cd_package() {
+	cmd_options="--recursive"
+	package_abs_path=$1
+	package_url=$2
+	package_branch=$3
+
+	if [ -n "$3" ]; then
+		cmd_options+=" -b ${package_branch}"
+	fi
+
+	# if [ -n "$4" ]; then
+	# 	cmd_options+="--recursive"
+	# fi
+
+	package_dir=$deps_source_path/$package_abs_path
+
+	cd $deps_source_path
+	git clone $cmd_options $package_url $package_dir  >> $log_file 2>&1 
+	[ $? != 0 ] && printError "git clone $cmd_options $package_url $package_dir" && exit
+	cd $package_dir
+}
+
 make_config_install() {
 	package_name=$1
 	package_prefix=$2
@@ -598,6 +623,10 @@ libtool_install() {
 		echo -e "\t\t* ./autogen.pl --force"
 		./autogen.pl --force >> $log_file 2>&1 
 		[ $? != 0 ] && printError "./autogen.pl" && exit
+	elif [[ -f bootstrap ]]; then
+		echo -e "\t\t* ./bootstrap"
+		./bootstrap >> $log_file 2>&1
+		[ $? != 0 ] && printError "./bootstrap" && exit
 	fi
 
 	echo -e "\t\t* ./configure --prefix=$package_prefix $configure_extra_options"
