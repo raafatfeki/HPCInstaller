@@ -253,7 +253,7 @@ set_paths() {
 	if [[ ! -z $outputsuffix ]]; then
 		ENV_FILE_NAME+="_$outputsuffix"
 	fi
-	MY_LOAD_ENV_FILE=$THIS_PATH/$ENV_FILE_NAME.sh
+	MY_LOAD_ENV_FILE=$THIS_PATH/env/$ENV_FILE_NAME.sh
 	mkdir -p $deps_tar_path $deps_source_path $install_path
 }
 
