@@ -685,4 +685,4 @@ pkg_requires_pkgs() {
 	[[ $val != 0 ]] && exit
 }
 
-source `dirname $0`/packages.sh
+source `dirname $0`/src/pkgs-def.sh

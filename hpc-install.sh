@@ -1,4 +1,4 @@
-source `dirname $0`/installer_utils.sh
+source `dirname $0`/src/utils.sh
 
 get_options $*
 
