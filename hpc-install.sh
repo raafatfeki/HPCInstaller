@@ -8,7 +8,8 @@ if [[ ${#software_to_install[@]} -eq 0 ]]; then
 	exit
 fi
 
-echo "Install Softwares:"
+
+printInfo "- Install Softwares: ${software_to_install[@]}"
 set_paths
 
 for package_name in ${software_to_install[@]}; do
@@ -26,16 +27,15 @@ for package_name in ${software_to_install[@]}; do
 	pkg["prefix"]=$package_prefix
 
 	if [[ ! -d $package_prefix ]]; then
-		echo -e "\t- Installing $package_name Version $package_version.$package_sub_version under $package_prefix"
+		echo -e "\t- Installing \"$package_name\" Version $package_version.$package_sub_version under $package_prefix"
 		if $to_install; then
 			install_package_$package_name $package_name $package_version $package_sub_version $package_prefix
 		fi
 	else
-		echo -e "\t- $package_name Version $package_version already installed under $package_prefix"
+		echo -e "\t* Package \"$package_name\" Version $package_version already installed under $package_prefix"
 	fi
 	export_package $package_prefix
 done
 
-echo "Create load_env script."
-echo -e "\t-Command to load: \". $MY_LOAD_ENV_FILE\""
 create_load_env $MY_LOAD_ENV_FILE
+printInfo "- Command to load your packages: \". $MY_LOAD_ENV_FILE\""

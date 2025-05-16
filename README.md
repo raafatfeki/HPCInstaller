@@ -1,2 +1,2 @@
 # HPCInstaller
-A tool for installing regular HPC Software/Benchmarks
+A tool to install HPC Softwares/Benchmarks.

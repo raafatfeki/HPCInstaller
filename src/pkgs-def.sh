@@ -43,6 +43,8 @@ install_package_hdf5() {
 }
 
 install_package_netcdf_c() {
+	pkg_requires_pkgs "mpi"
+
 	package_name=$1
 	package_version=$2
 	package_sub_version=$3
@@ -59,6 +61,9 @@ install_package_netcdf_c() {
 }
 
 install_package_netcdf_fortran() {
+	pkg_requires_pkgs "mpi"
+	pkg_requires_pkgs "netcdf_c"
+
 	package_name=$1
 	package_version=$2
 	package_sub_version=$3
@@ -73,6 +78,9 @@ install_package_netcdf_fortran() {
 }
 
 install_package_netcdf() {
+	pkg_requires_pkgs "netcdf_fortran"
+	pkg_requires_pkgs "netcdf_c"
+
 	package_name=$1
 	package_version=$2
 	package_sub_version=$3
@@ -85,6 +93,8 @@ install_package_netcdf() {
 }
 
 install_package_madmpi() {
+	pkg_requires_pkgs "mpi"
+
 	package_name=$1
 	package_version=$2
 	package_sub_version=$3
@@ -132,6 +142,9 @@ install_package_nccl() {
 }
 
 install_package_nccl_tests() {
+	pkg_requires_pkgs "mpi"
+	pkg_requires_pkgs "nccl"
+
 	package_name=$1
 	package_version=$2
 	package_sub_version=$3
@@ -157,6 +170,8 @@ install_package_psm2_nccl() {
 }
 
 install_package_aws_ofi_nccl() {
+	pkg_requires_pkgs "mpi"
+
 	package_name=$1
 	package_version=$2
 	package_sub_version=$3
@@ -195,6 +210,9 @@ install_package_rccl() {
 }
 
 install_package_rccl_tests() {
+	pkg_requires_pkgs "mpi"
+	pkg_requires_pkgs "rccl"
+
 	package_name=$1
 	package_version=$2
 	package_sub_version=$3
@@ -213,6 +231,9 @@ install_package_rccl_tests() {
 }
 
 install_package_aws_ofi_rccl() {
+	pkg_requires_pkgs "mpi"
+	pkg_requires_pkgs "rccl"
+
 	package_name=$1
 	package_version=$2
 	package_sub_version=$3
@@ -269,6 +290,8 @@ install_package_openmpi_ucx() {
 }
 
 install_package_osu() {
+	pkg_requires_pkgs "mpi"
+
 	package_name=$1
 	package_version=$2
 	package_sub_version=$3
@@ -315,6 +338,8 @@ install_package_imb() {
 }
 
 install_package_json_fortran() {
+	pkg_requires_pkgs "cmake"
+
 	package_name=$1
 	package_version=$2
 	package_sub_version=$3
@@ -323,7 +348,6 @@ install_package_json_fortran() {
 	package_build_extra_options="-DUSE_GNU_INSTALL_CONVENTION=ON"
 	package_tar_rename="json-fortran-$package_version.$package_sub_version"
 
-	pkg_requires_pkgs "cmake"
 	cmake_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename
 }
 

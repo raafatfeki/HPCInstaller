@@ -24,7 +24,6 @@ ENV_FILE_NAME="load_env"
 max_threads=`lscpu | grep "^CPU(s)" | awk  '{print $2}'`
 
 declare -A available_softwares
-
 declare -a software_to_install=()
 declare -a supported_mpi_flavor=("openmpi" "openmpi_ucx" "impi")
 declare -A software_suffixes=()
@@ -122,7 +121,7 @@ printWarn() {
 
 printInfo() {
 	in="$@"
-	printf "${BOLDGREEN}Info: $in${NC}\n"
+	printf "${BOLDGREEN}$in${NC}\n"
 }
 
 get_options() {
@@ -287,18 +286,20 @@ create_software_list() {
 
 		if [[ ! -z $package_suffix ]]; then
 			software_suffixes[$package_name]=$package_suffix
-			printInfo "Install package '$package_name' with a suffix '-$package_suffix'."
 		fi
 	done
 }
 
 create_external_software_list() {
 	input_list=${1//,/ }
+	if [[ ! -z $input_list ]]; then
+		printInfo "- Export External Packages:"
+	fi
+
 	for input in $input_list; do
 		input_array=(${input//:/ })
 		package_name=${input_array[0]}
 		package_prefix=${input_array[1]}
-
 
 		if [[ -z $package_name ]]; then
 			printError "No Package name specified: input=$input"
@@ -310,7 +311,7 @@ create_external_software_list() {
 			exit
 		fi
 
-		printInfo "Export Package $package_name: $package_prefix"
+		echo -e "\t* $package_name:$package_prefix "
 		eval "declare -gA pkg_info_$package_name=(["prefix"]=$package_prefix ["version"]="X" ["sub_version"]="X")"
 
 		export_package $package_prefix
