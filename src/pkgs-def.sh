@@ -479,7 +479,12 @@ install_package_ior() {
 	libtool_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename
 }
 
-
+install_package_dummy() {
+	package_name=$1
+	package_version=$2
+	package_sub_version=$3
+	package_prefix=$4
+}
 
 
 

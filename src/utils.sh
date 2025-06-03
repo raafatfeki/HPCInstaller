@@ -40,6 +40,10 @@ else
 	declare -A pkg_info_cmake=(["version"]="${CMAKE_VERSION%%.*}" ["sub_version"]="${CMAKE_VERSION#*.}" ["prefix"]=${cmake_path%%bin*} )
 fi
 
+
+declare -A pkg_info_dummy=(["version"]="X.X" ["sub_version"]="X")
+
+
 declare -A pkg_info_hdf5=(["version"]="1.12" ["sub_version"]="0")
 declare -A pkg_info_openmpi=(["version"]="5.0" ["sub_version"]="3" ["CC"]="mpicc" ["CXX"]="mpicxx" ["F77"]="mpif77" ["FC"]="mpifort")
 declare -A pkg_info_openmpi_ucx=(["version"]="5.0" ["sub_version"]="3" ["CC"]="mpicc" ["CXX"]="mpicxx" ["F77"]="mpif77" ["FC"]="mpifort")
