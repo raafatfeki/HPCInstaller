@@ -239,9 +239,9 @@ install_package_aws_ofi_rccl() {
 	package_sub_version=$3
 	package_prefix=$4
 	#package_url="https://github.com/ROCm/aws-ofi-rccl/archive/refs/heads/cxi.zip"
-	package_url="https://github.com/cornelisnetworks/aws-ofi-rccl/archive/refs/heads/opx.zip"
+	package_url="https://github.com/cornelisnetworks/aws-ofi-rccl/archive/refs/heads/opx-compatability.zip"
 	package_build_extra_options="--with-hip=$gpu_path --with-mpi=${pkg_info_mpi['prefix']} --with-rccl=${pkg_info_rccl['prefix']}"
-	package_tar_rename="aws-ofi-rccl-opx"
+	package_tar_rename="aws-ofi-rccl-opx-compatability"
 
 	package_build_extra_options+=" --with-libfabric="
 	if [[ -n ${pkg_info_libfabric["prefix"]} ]]; then

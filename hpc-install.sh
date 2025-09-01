@@ -9,8 +9,10 @@ if [[ ${#software_to_install[@]} -eq 0 ]]; then
 fi
 
 
-printInfo "- Install Softwares: ${software_to_install[@]}"
 set_paths
+echo "Executed command: $0 $@" >> $log_file 2>&1
+
+printInfo "- Install Softwares: ${software_to_install[@]}"
 
 for package_name in ${software_to_install[@]}; do
 	declare -n pkg="pkg_info_${package_name}" 
