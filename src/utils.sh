@@ -9,7 +9,7 @@ fortran_compiler="gfortran"
 gpu_arch=""
 gpu_path="/usr/local/cuda"
 
-log_file_name=hpcinstaller.log
+log_file_name=log_$(hostname -s)_hpc.log
 deps_source_dir_name=build/$(uname)-$ID${VERSION_ID%.*}-$(arch)
 deps_install_relative_path=install/$(uname)-$ID${VERSION_ID%.*}-$(arch)
 THIS_PATH=`pwd`
@@ -72,7 +72,7 @@ declare -A pkg_info_aws_ofi_nccl=(["version"]="1.13" ["sub_version"]="2")
 
 # RCCL_based
 declare -A pkg_info_rccl=(["version"]="6.3" ["sub_version"]="3")
-declare -A pkg_info_rccl_tests=(["version"]="9" ["sub_version"]="19")
+declare -A pkg_info_rccl_tests=(["version"]="X" ["sub_version"]="X")
 # declare -A pkg_info_psm2_rccl=(["version"]="0.3" ["sub_version"]="0")
 declare -A pkg_info_aws_ofi_rccl=(["version"]="1.9" ["sub_version"]="2")
 
