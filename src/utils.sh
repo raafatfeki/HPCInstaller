@@ -7,7 +7,10 @@ mpi_flavor="openmpi"
 compiler="gcc"
 fortran_compiler="gfortran"
 gpu_arch=""
-gpu_path="/usr/local/cuda"
+gpu_path=""
+is_nv_gpu=false
+is_rocm_gpu=false
+is_gpu_support=false
 
 log_file_name=log_$(hostname -s)_hpc.log
 deps_source_dir_name=build/$(uname)-$ID${VERSION_ID%.*}-$(arch)
@@ -88,7 +91,7 @@ declare -n pkg_info_mpi="pkg_info_${mpi_flavor}"
 declare -n pkg_info_compiler="pkg_info_${compiler}"
 
 # GPU Arch Map
-declare -A gpu_map=(["p100"]="60" ["gp100"]="60" ["a40"]="86" ["h100"]="90" ["h100"]="90" ["mi300x"]="x")
+declare -A gpu_map=(["p100"]="60" ["gp100"]="60" ["a40"]="86" ["h100"]="90" ["h100"]="90" ["rocm"]="x")
 
 set -o posix;
 
@@ -165,6 +168,8 @@ get_options() {
 				;;
 			--gpu)
 				local_gpu_info=$2
+				# Check for GPUs only if requested: is_gpu_support is true only if the system have a GPU and --gpu is explicetly requested.
+				get_gpu_info
 				set_gpu $local_gpu_info
 				shift 2
 				;;
@@ -187,6 +192,28 @@ get_options() {
 		echo "-i | --install-list, -l | --list-packages"
 		exit
 	fi
+}
+
+get_gpu_info() {
+	echo "- Check GPUs."
+	gpu_nb=$(lspci | grep "controller: NVIDIA Corporation" | wc -l)
+	if [[ $gpu_nb -ge 1 ]]; then
+		echo -e "\t* Found $gpu_nb NVIDIA GPUs."
+		is_nv_gpu=true
+		is_gpu_support=true
+	fi
+
+	gpu_nb=$(lspci | grep -e "Display controller: Advanced Micro Devices" -e "Processing accelerator" | wc -l)
+	if [[ $gpu_nb -ge 1 ]]; then
+		echo -e "\t* Found $gpu_nb AMD GPUs."
+		is_rocm_gpu=true
+		is_gpu_support=true
+	fi
+
+	if $is_nv_gpu && $is_rocm_gpu; then
+		printWarn "This is a mixt system of AMD and NVIDIA GPUs."
+	fi
+
 }
 
 set_mpi() {
@@ -227,11 +254,30 @@ set_mpi() {
 }
 
 set_gpu() {
+	if ! $is_gpu_support; then
+		printError "You Requested GPU support but No GPU has been detected."
+		exit
+	fi
+
 	input_array=(${1//:/ })
 	gpu_arch=${input_array[0]}
 	if [[ ! ${!gpu_map[@]} =~ $gpu_arch ]]; then
 		printError "The requested GPU arch '$gpu_arch' is not supported. We only support:" "${!gpu_map[@]}"
 		exit
+	else
+		if [[ $gpu_arch == "rocm" ]]; then
+			if ! $is_rocm_gpu; then
+				printError "No AMD GPU detected"
+				exit
+			fi
+			is_nv_gpu=false
+		else
+			if ! $is_nv_gpu; then
+				printError "No NVIDIA GPU detected"
+				exit
+			fi
+			is_rocm_gpu=false
+		fi
 	fi
 
 	gpu_path=${input_array[1]}
@@ -262,12 +308,13 @@ set_paths() {
 
 get_libtool_gpu_conf() {
 	package_build_extra_options=""
-	if [[ ! -z $gpu_arch ]]; then
-		if [[ $gpu_arch == "mi300x" ]]; then
+	if $is_gpu_support; then
+		if $is_rocm_gpu; then
 			package_build_extra_options+=" --with-rocm"
 		else
 			package_build_extra_options+=" --with-cuda"
 		fi
+
 		if [[ ! -z $gpu_path ]]; then
 			package_build_extra_options+="=$gpu_path "
 		fi
@@ -661,7 +708,7 @@ pkg_requires_pkgs() {
 	for arg in "$@"; do
 		# Check GPU
 		if [[ $arg == "gpu" ]]; then
-			if [[ -z $gpu_arch ]]; then
+			if ! $is_gpu_support; then
 				printError "Please use --gpu option to define you GPU Arch and API path."
 				val=1
 			else

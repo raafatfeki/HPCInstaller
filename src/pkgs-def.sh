@@ -24,7 +24,7 @@ install_package_openmpi() {
 	package_sub_version=$3
 	package_prefix=$4
 	package_url="https://download.open-mpi.org/release/open-mpi/v$package_version/openmpi-$package_version.$package_sub_version.tar.gz"
-	package_build_extra_options="$(get_libtool_gpu_conf) --with-ofi --with-psm2 --enable-mpi1-compatibility --enable-shared --enable-dlopen"
+	package_build_extra_options="$(get_libtool_gpu_conf) --with-ofi --enable-mpi1-compatibility --enable-shared --enable-dlopen"
 	package_tar_rename=""
 
 	libtool_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename
@@ -131,7 +131,7 @@ install_package_nccl() {
 	package_build_extra_options="src.build BUILDDIR=$package_prefix"
 	package_tar_rename="nccl-$package_version.$package_sub_version"
 
-	if [[ ! -z $gpu_arch && ! -z ${gpu_map[$gpu_arch]} ]]; then
+	if $is_gpu_support; then
 		package_build_extra_options+=" NVCC_GENCODE=\"-gencode=arch=compute_${gpu_map[$gpu_arch]},code=sm_${gpu_map[$gpu_arch]}\""
 	fi
 
@@ -177,12 +177,8 @@ install_package_aws_ofi_nccl() {
 	package_sub_version=$3
 	package_prefix=$4
 	package_url="https://github.com/aws/aws-ofi-nccl/releases/download/v$package_version.$package_sub_version-aws/aws-ofi-nccl-$package_version.$package_sub_version-aws.tar.gz"
-	package_build_extra_options="--with-mpi=${pkg_info_mpi['prefix']} --with-hwloc"
+	package_build_extra_options="$(get_libtool_gpu_conf) --with-mpi=${pkg_info_mpi['prefix']} --with-hwloc"
 	package_tar_rename=""
-
-	if [[ ! -z $gpu_path ]]; then
-		package_build_extra_options+=" --with-cuda=$gpu_path"
-	fi
 
 	package_build_extra_options+=" --with-libfabric="
 	if [[ -n ${pkg_info_libfabric["prefix"]} ]]; then
@@ -240,9 +236,12 @@ install_package_aws_ofi_rccl() {
 	package_prefix=$4
 	#package_url="https://github.com/ROCm/aws-ofi-rccl/archive/refs/heads/cxi.zip"
 	package_url="https://github.com/cornelisnetworks/aws-ofi-rccl/archive/refs/heads/opx-compatability.zip"
-	package_build_extra_options="--with-hip=$gpu_path --with-mpi=${pkg_info_mpi['prefix']} --with-rccl=${pkg_info_rccl['prefix']}"
+	package_build_extra_options="--with-mpi=${pkg_info_mpi['prefix']} --with-rccl=${pkg_info_rccl['prefix']} --with-hip"
 	package_tar_rename="aws-ofi-rccl-opx-compatability"
 
+	if [[ ! -z $gpu_path ]]; then
+		package_build_extra_options+="=$gpu_path"
+	fi
 	package_build_extra_options+=" --with-libfabric="
 	if [[ -n ${pkg_info_libfabric["prefix"]} ]]; then
 		package_build_extra_options+="${pkg_info_libfabric["prefix"]}"
@@ -300,8 +299,12 @@ install_package_osu() {
 	package_build_extra_options="$(get_libtool_gpu_conf) CFLAGS=-I${pkg_info_mpi['prefix']}/include LDFLAGS=-L${pkg_info_mpi['prefix']}/lib CC=${pkg_info_mpi['CC']} CXX=${pkg_info_mpi['CXX']} F77=${pkg_info_mpi['F77']} FC=${pkg_info_mpi['FC']}"
 	package_tar_rename=""
 
-	if [[ ! -z $gpu_arch ]]; then
-		package_build_extra_options+=" --enable-cuda "
+	if $is_gpu_support; then
+		if $is_rocm_gpu; then
+			package_build_extra_options+=" --enable-rocm"
+		else
+			package_build_extra_options+=" --enable-cuda"
+		fi
 	fi
 
 	# ${pkg_info_mpi['prefix']}/bin/
@@ -325,7 +328,7 @@ install_package_imb() {
 	make_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename
 	cp IMB-EXT IMB-MPI1 IMB-NBC IMB-RMA IMB-IO IMB-MT IMB-P2P $package_prefix/bin
 
-	if [[ ! -z $gpu_arch ]]; then
+	if $is_gpu_support; then
 		echo -e "\n\t- Install IMB-MPI1-GPU"
 		if [[ ! -z $gpu_path ]]; then
 			package_build_extra_options="IMB-MPI1-GPU CFLAGS=-Wno-error=unused-value CUDA_INCLUDE_DIR=$gpu_path/include "$package_build_extra_options
@@ -408,7 +411,7 @@ install_package_neko() {
 	# --with-rccl
 	# --with-hdf5
 
-	if [[ ! -z $gpu_arch && ! -z ${gpu_map[$gpu_arch]} ]]; then
+	if $is_gpu_support; then
 		package_build_extra_options+=" CUDA_CFLAGS=-O3 CUDA_ARCH=-arch=sm_${gpu_map[$gpu_arch]} NVCC=$gpu_path/bin/nvcc "
 	fi
 
