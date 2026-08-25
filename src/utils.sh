@@ -92,11 +92,11 @@ declare -n pkg_info_mpi="pkg_info_${mpi_flavor}"
 declare -n pkg_info_compiler="pkg_info_${compiler}"
 
 # GPU Arch Map
-declare -A gpu_map=(["p100"]="60" ["gp100"]="60" ["a40"]="86" ["h100"]="90" ["h100"]="90" ["rocm"]="x")
+declare -A gpu_map=(["p100"]="60" ["gp100"]="60" ["a40"]="86" ["a100"]="80" ["h100"]="90" ["rocm"]="x")
 
 set -o posix;
-
 listOfPackages=`set | grep "pkg_info_" | cut -d "=" -f1`
+set +o posix;
 
 for package_name in $listOfPackages; do
 	available_softwares[${package_name#pkg_info_*}]=1
@@ -133,7 +133,7 @@ printInfo() {
 }
 
 get_options() {
-	VALID_ARGS=$(getopt -o i:,l,p:,s:,b:,c: --long install-list:,list-packages,path:,mpi:,gpu:,suffix:,build-path:,conf-external: -- "$@")
+	VALID_ARGS=$(getopt -o i:lp:s:b:c:h --long install-list:,list-packages,path:,mpi:,gpu:,suffix:,build-path:,conf-external:,help -- "$@")
 	[ $? != 0 ] && printError "Wrong options -- Please try installer.sh (-h|--help)" && exit
 
 	eval set -- "$VALID_ARGS"
@@ -229,7 +229,7 @@ set_mpi() {
 	mpi_path=${input_array[1]}
 
 	if [[ -z $mpi_path ]]; then
-		if [[ ! ${supported_mpi_flavor[@]} =~ $mpi_flavor ]]; then
+		if [[ ! " ${supported_mpi_flavor[*]} " == *" $mpi_flavor "* ]]; then
 			printError "The requested MPI flavor $mpi_flavor is not supported. Please provide your local MPI path or choose one of the following list."
 			list_mpi
 			exit
@@ -262,7 +262,7 @@ set_gpu() {
 
 	input_array=(${1//:/ })
 	gpu_arch=${input_array[0]}
-	if [[ ! ${!gpu_map[@]} =~ $gpu_arch ]]; then
+	if [[ ! -v gpu_map[$gpu_arch] ]]; then
 		printError "The requested GPU arch '$gpu_arch' is not supported. We only support:" "${!gpu_map[@]}"
 		exit
 	else
@@ -368,6 +368,32 @@ create_external_software_list() {
 
 		export_package $package_prefix
 	done
+}
+
+usage() {
+	cat << EOF
+Usage: $(basename $0) [OPTIONS]
+
+Options:
+	-i, --install-list <pkg[:suffix][,pkg[:suffix]...]>
+	                          Comma-separated list of packages to install.
+	-c, --conf-external <pkg:path[,pkg:path...]>
+	                          Register external/pre-built package(s) by path.
+	-l, --list-packages       List all supported packages and exit.
+	-p, --path <dir>          Root install path (default: \$HOME/softwares).
+	-b, --build-path <dir>    Root build/source path (default: same as --path).
+	-s, --suffix <str>        Suffix appended to install/build paths and env file.
+	    --mpi <flavor[:path]> MPI flavor to use/install (openmpi|openmpi_ucx|impi),
+	                          or a path to an existing local MPI installation.
+	    --gpu <arch[:path]>   GPU arch to build against (${!gpu_map[@]}),
+	                          optionally followed by a path to the GPU SDK.
+	-h, --help                Show this help message and exit.
+
+Examples:
+	$(basename $0) -i openmpi,osu --mpi openmpi
+	$(basename $0) -i hdf5,netcdf_c --mpi openmpi_ucx --gpu a100
+	$(basename $0) -l
+EOF
 }
 
 list_packages() {
