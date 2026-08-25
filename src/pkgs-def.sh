@@ -24,7 +24,7 @@ install_package_openmpi() {
 	package_sub_version=$3
 	package_prefix=$4
 	package_url="https://download.open-mpi.org/release/open-mpi/v$package_version/openmpi-$package_version.$package_sub_version.tar.gz"
-	package_build_extra_options="$(get_libtool_gpu_conf) --with-ofi --enable-mpi1-compatibility --enable-shared --enable-dlopen"
+	package_build_extra_options="$(get_libtool_gpu_conf) --without-psm2 --with-ofi --enable-mpi1-compatibility --enable-shared --enable-dlopen"
 	package_tar_rename=""
 
 	libtool_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename

@@ -1,7 +1,8 @@
 #!/bin/bash
 #
 . /etc/os-release
-
+# For SLES
+export PATH=$PATH:/usr/sbin:/sbin
 ########## What User Must set ##########
 mpi_flavor="openmpi"
 compiler="gcc"
@@ -47,9 +48,9 @@ fi
 declare -A pkg_info_dummy=(["version"]="X.X" ["sub_version"]="X")
 
 
-declare -A pkg_info_hdf5=(["version"]="1.12" ["sub_version"]="0")
-declare -A pkg_info_openmpi=(["version"]="5.0" ["sub_version"]="8" ["CC"]="mpicc" ["CXX"]="mpicxx" ["F77"]="mpif77" ["FC"]="mpifort")
-declare -A pkg_info_openmpi_ucx=(["version"]="5.0" ["sub_version"]="3" ["CC"]="mpicc" ["CXX"]="mpicxx" ["F77"]="mpif77" ["FC"]="mpifort")
+declare -A pkg_info_hdf5=(["version"]="2" ["sub_version"]="2.0")
+declare -A pkg_info_openmpi=(["version"]="5.0" ["sub_version"]="10" ["CC"]="mpicc" ["CXX"]="mpicxx" ["F77"]="mpif77" ["FC"]="mpifort")
+declare -A pkg_info_openmpi_ucx=(["version"]="5.0" ["sub_version"]="10" ["CC"]="mpicc" ["CXX"]="mpicxx" ["F77"]="mpif77" ["FC"]="mpifort")
 declare -A pkg_info_impi=(["version"]="X" ["sub_version"]="X" ["CC"]="mpigcc" ["CXX"]="mpigxx" ["F77"]="mpif77" ["FC"]="mpif90")
 declare -A pkg_info_netcdf_c=(["version"]="4.9" ["sub_version"]="2")
 declare -A pkg_info_netcdf_fortran=(["version"]="4.6" ["sub_version"]="1")
@@ -62,14 +63,14 @@ declare -A pkg_info_gslib=(["version"]="1" ["sub_version"]="0.9")
 declare -A pkg_info_parmetis=(["version"]="4" ["sub_version"]="0.3")
 
 # Benchmarks
-declare -A pkg_info_osu=(["version"]="7" ["sub_version"]="4")
+declare -A pkg_info_osu=(["version"]="7" ["sub_version"]="5.2")
 declare -A pkg_info_imb=(["version"]="2021" ["sub_version"]="8")
 declare -A pkg_info_neko=(["version"]="0.9" ["sub_version"]="1")
 declare -A pkg_info_arrhenius_benchmarks=(["version"]="X" ["sub_version"]="X")
 
 # NCCL-Based
-declare -A pkg_info_nccl=(["version"]="2.23" ["sub_version"]="4-1")
-declare -A pkg_info_nccl_tests=(["version"]="2.13" ["sub_version"]="10")
+declare -A pkg_info_nccl=(["version"]="2.31" ["sub_version"]="2")
+declare -A pkg_info_nccl_tests=(["version"]="2" ["sub_version"]="19.7")
 declare -A pkg_info_psm2_nccl=(["version"]="0.3" ["sub_version"]="0")
 declare -A pkg_info_aws_ofi_nccl=(["version"]="1.13" ["sub_version"]="2")
 
@@ -195,7 +196,7 @@ get_options() {
 }
 
 get_gpu_info() {
-	echo "- Check GPUs."
+	printInfo "- Check GPUs:"
 	gpu_nb=$(lspci | grep "controller: NVIDIA Corporation" | wc -l)
 	if [[ $gpu_nb -ge 1 ]]; then
 		echo -e "\t* Found $gpu_nb NVIDIA GPUs."
@@ -671,9 +672,8 @@ libtool_install() {
 		./autogen.sh >> $log_file 2>&1 
 		[ $? != 0 ] && printError "./autogen.sh" && exit
 	elif [[ -f autogen.pl ]]; then
-		#statements
-		echo -e "\t\t* ./autogen.pl --force"
-		./autogen.pl --force >> $log_file 2>&1 
+		echo -e "\t\t* ./autogen.pl"
+		./autogen.pl >> $log_file 2>&1
 		[ $? != 0 ] && printError "./autogen.pl" && exit
 	elif [[ -f bootstrap ]]; then
 		echo -e "\t\t* ./bootstrap"
