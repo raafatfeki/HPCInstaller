@@ -214,15 +214,15 @@ libtool_install() {
 	if [[ -f autogen.sh ]]; then
 		echo -e "\t\t* ./autogen.sh"
 		./autogen.sh >> $log_file 2>&1 
-		[ $? != 0 ] && printError "./autogen.sh" && exit
+		[ $? != 0 ] && printWarn "./autogen.sh failed or not needed. If configure fails, then re-check this."
 	elif [[ -f autogen.pl ]]; then
 		echo -e "\t\t* ./autogen.pl"
 		./autogen.pl >> $log_file 2>&1
-		[ $? != 0 ] && printError "./autogen.pl" && exit
+		[ $? != 0 ] && printWarn "./autogen.pl failed or not needed. If configure fails, then re-check this."
 	elif [[ -f bootstrap ]]; then
 		echo -e "\t\t* ./bootstrap"
 		./bootstrap >> $log_file 2>&1
-		[ $? != 0 ] && printError "./bootstrap" && exit
+		[ $? != 0 ] && printWarn "./bootstrap failed or not needed. If configure fails, then re-check this."
 	fi
 
 	echo -e "\t\t* ./configure --prefix=$package_prefix $configure_extra_options"
