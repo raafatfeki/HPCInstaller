@@ -3,7 +3,7 @@
 # cli.sh - command-line option parsing and user-facing listing/help output.
 
 get_options() {
-	VALID_ARGS=$(getopt -o i:lp:s:b:c:h --long install-list:,list-packages,path:,mpi:,gpu:,suffix:,build-path:,conf-external:,help -- "$@")
+	VALID_ARGS=$(getopt -o i:lp:t:b:c:h --long install-list:,list-packages,path:,mpi:,gpu:,tag:,build-path:,conf-external:,force-update,help -- "$@")
 	[ $? != 0 ] && printError "Wrong options -- Please try installer.sh (-h|--help)" && exit
 
 	eval set -- "$VALID_ARGS"
@@ -27,9 +27,13 @@ get_options() {
 				build_path=$2
 				shift 2
 				;;
-			-s | --suffix)
-				outputsuffix=$2
+			-t | --tag)
+				ftag=$2
 				shift 2
+				;;
+			--force-update)
+				force_update=true
+				shift
 				;;
 			--mpi)
 				local_mpi_info=$2
@@ -216,9 +220,16 @@ Options:
 	-c, --conf-external <pkg:path[,pkg:path...]>
 	                          Register external/pre-built package(s) by path.
 	-l, --list-packages       List all supported packages and exit.
-	-p, --path <dir>          Root install path (default: \$HOME/softwares).
-	-b, --build-path <dir>    Root build/source path (default: same as --path).
-	-s, --suffix <str>        Suffix appended to install/build paths and env file.
+	-p, --path <dir>          Absolute root path (default: <script dir>/softwares).
+	                          Build/install directories are created under
+	                          <path>/<node short name>/{build,install}; tar
+	                          downloads are shared directly under <path>/tars.
+	-b, --build-path <dir>    Absolute build/source path override
+	                          (default: <path>/<node short name>).
+	-t, --tag <str>           Identifier for this build's env file (default:
+	                          "default"). Does not affect build/install paths.
+	    --force-update        Overwrite the env file if -t/--tag already
+	                          identifies one, instead of erroring out.
 	    --mpi <flavor[:path]> MPI flavor to use/install (openmpi|openmpi_ucx|impi),
 	                          or a path to an existing local MPI installation.
 	    --gpu <arch[:path]>   GPU arch to build against (${!gpu_map[@]}),

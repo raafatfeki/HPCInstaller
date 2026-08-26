@@ -20,8 +20,14 @@ is_gpu_support=false
 log_file_name=log_$(hostname -s)_hpc.log
 deps_source_dir_name=build/$(uname)-$ID${VERSION_ID%.*}-$(arch)
 deps_install_relative_path=install/$(uname)-$ID${VERSION_ID%.*}-$(arch)
-THIS_PATH=`pwd`
-root_path=$HOME/softwares
+
+# THIS_PATH is the script's own directory (not the caller's cwd), so all
+# default paths (softwares/, log/, env/) live next to hpc-install.sh
+# regardless of where it's invoked from.
+THIS_PATH=$(cd "$(dirname "$0")" && pwd)
+NODE_NAME=$(hostname -s)
+
+root_path=$THIS_PATH/softwares
 build_path=""
 
 deps_tar_path=""
@@ -39,6 +45,12 @@ declare -A software_suffixes=()
 # CLI-driven state flags
 is_list_option=false
 is_mpi=false
+force_update=false
+
+# Identifier for this build's env file only -- does NOT affect build/install
+# paths. Two different --tag runs against the same node/MPI/GPU combination
+# will reuse the same build/install directories but get distinct env files.
+ftag="default"
 
 GCC_VERSION=`gcc --version | head -n 1 | awk '{print $3}'`
 
