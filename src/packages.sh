@@ -1,5 +1,8 @@
 #!/bin/bash
 #
+# packages.sh - the package registry: one install_package_<name>() recipe
+# per supported package/benchmark.
+
 
 install_package_cmake() {
 	package_name=$1

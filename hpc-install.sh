@@ -1,4 +1,13 @@
-source `dirname $0`/src/utils.sh
+#!/bin/bash
+#
+THIS_SCRIPT_DIR=`dirname $0`
+
+source $THIS_SCRIPT_DIR/src/common.sh
+source $THIS_SCRIPT_DIR/src/config.sh
+source $THIS_SCRIPT_DIR/src/paths.sh
+source $THIS_SCRIPT_DIR/src/build.sh
+source $THIS_SCRIPT_DIR/src/cli.sh
+source $THIS_SCRIPT_DIR/src/packages.sh
 
 get_options $*
 
