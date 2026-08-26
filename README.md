@@ -18,3 +18,7 @@ A tool to install HPC Softwares/Benchmarks.
 
 ./hpc-install.sh -c libfabric:/usr/  -i nccl --mpi openmpi  --gpu h100:/usr/local/cuda -p /home/rfeki/HPCSoftBuild/nccl -s 12.0.2.0.13
 
+
+
+
+./hpc-install.sh -c libfabric:/usr/  -i osu,imb --mpi openmpi  -p /home/rfeki/release-test-softwares/$(hostname -s)

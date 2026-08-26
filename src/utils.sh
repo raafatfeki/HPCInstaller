@@ -293,6 +293,20 @@ set_paths() {
 	root_path=$root_path-$outputsuffix
 	log_file=$THIS_PATH/$log_file_name
 	deps_tar_path=$root_path/tars/
+
+	# Namespace build/install paths by MPI flavor and GPU arch, but only when
+	# --mpi/--gpu were explicitly passed -- otherwise the default path layout
+	# stays exactly as before, so existing installs aren't orphaned.
+	variant_tag=""
+	if $is_mpi; then
+		variant_tag+="-$mpi_flavor"
+	fi
+	if $is_gpu_support; then
+		variant_tag+="-$gpu_arch"
+	fi
+	deps_source_dir_name+="$variant_tag"
+	deps_install_relative_path+="$variant_tag"
+
 	if [[ $build_path == "" ]]; then
 		build_path=$root_path
 	else
@@ -302,6 +316,9 @@ set_paths() {
 	install_path=$root_path/$deps_install_relative_path
 	if [[ ! -z $outputsuffix ]]; then
 		ENV_FILE_NAME+="_$outputsuffix"
+	fi
+	if [[ ! -z $variant_tag ]]; then
+		ENV_FILE_NAME+="$variant_tag"
 	fi
 	MY_LOAD_ENV_FILE=$THIS_PATH/env/$ENV_FILE_NAME.sh
 	mkdir -p $deps_tar_path $deps_source_path $install_path
@@ -481,47 +498,48 @@ export PKG_CONFIG_PATH=$LOCAL_PKG_CONFIG_PATH:\$PKG_CONFIG_PATH
 EOF
 }
 
-vercomp () {
-    if [[ $1 == $2 ]]
-    then
-        return 0
-    fi
-    local IFS=.
-    local i ver1=($1) ver2=($2)
-    # fill empty fields in ver1 with zeros
-    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
-    do
-        ver1[i]=0
-    done
-    for ((i=0; i<${#ver1[@]}; i++))
-    do
-        if ((10#${ver1[i]:=0} > 10#${ver2[i]:=0}))
-        then
-            return 1
-        fi
-        if ((10#${ver1[i]} < 10#${ver2[i]}))
-        then
-            return 2
-        fi
-    done
-    return 0
+version_compare() {
+	if [[ $1 == $2 ]]
+	then
+		return 0
+	fi
+	local IFS=.
+	local i ver1=($1) ver2=($2)
+	# fill empty fields in ver1 with zeros
+	for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+	do
+		ver1[i]=0
+	done
+	for ((i=0; i<${#ver1[@]}; i++))
+	do
+		if ((10#${ver1[i]:=0} > 10#${ver2[i]:=0}))
+		then
+			return 1
+		fi
+		if ((10#${ver1[i]} < 10#${ver2[i]}))
+		then
+			return 2
+		fi
+	done
+	return 0
 }
 
-testvercomp () {
-    vercomp $1 $2
-    case $? in
-        0) op='=';;
-        1) op='>';;
-        2) op='<';;
-    esac
-    if [[ $op != $3 ]]
-    then
-        echo -e "\t- Version of '$4' Not Supported: Expected $1 $3 $2, Actual $1 $op $2"
-        return -1
-    else
-        echo -e "\t- Version of '$4' Supported: '$1 $op $2'"
-        return 0
-    fi
+check_version_requirement() {
+	local op
+	version_compare $1 $2
+	case $? in
+		0) op='=';;
+		1) op='>';;
+		2) op='<';;
+	esac
+	if [[ $op != $3 ]]
+	then
+		echo -e "\t- Version of '$4' Not Supported: Expected $1 $3 $2, Actual $1 $op $2"
+		return 1
+	else
+		echo -e "\t- Version of '$4' Supported: '$1 $op $2'"
+		return 0
+	fi
 }
 
 download_untar_cd_package() {
