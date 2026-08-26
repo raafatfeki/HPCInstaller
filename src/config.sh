@@ -18,8 +18,8 @@ is_rocm_gpu=false
 is_gpu_support=false
 
 log_file_name=log_$(hostname -s)_hpc.log
-deps_source_dir_name=build/$(uname)-$ID${VERSION_ID%.*}-$(arch)
-deps_install_relative_path=install/$(uname)-$ID${VERSION_ID%.*}-$(arch)
+deps_source_dir_name=build/$(uname)-$ID${VERSION_ID}-$(arch)
+deps_install_relative_path=install/$(uname)-$ID${VERSION_ID}-$(arch)
 
 # THIS_PATH is the script's own directory (not the caller's cwd), so all
 # default paths (softwares/, log/, env/) live next to hpc-install.sh
