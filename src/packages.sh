@@ -21,13 +21,16 @@ install_package_cmake() {
 	[ $? != 0 ] && printError "make" && exit
 }
 
+# --enable-heterogeneous=no:skips the byte-order/type-size negotiation machinery on every message. Only safe if your test matrix is homogeneous per-run (mixed CPU arches in one job would need it on).
+# --with-knem / --with-xpmem — these are the two kernel-assisted single-copy mechanisms for large-message intranode transfers. Since your PML is cm (required for OFI/OPX), on-node traffic doesn't route through the BTL/vader shared-memory path the way ob1 does — the MTL layer can hand off to KNEM/XPMEM if available, avoiding a double-copy through the NIC loopback for same-node ranks. XPMEM tends to edge out KNEM for large messages if your kernel supports it; worth benchmarking both given your angle.
+#   CFLAGS="-O3 -march=native"  CXXFLAGS="-O3 -march=native"
 install_package_openmpi() {
 	package_name=$1
 	package_version=$2
 	package_sub_version=$3
 	package_prefix=$4
 	package_url="https://download.open-mpi.org/release/open-mpi/v$package_version/openmpi-$package_version.$package_sub_version.tar.gz"
-	package_build_extra_options="$(get_libtool_gpu_conf) --without-psm2 --with-ofi --enable-mpi1-compatibility --enable-shared --enable-dlopen"
+	package_build_extra_options="$(get_libtool_gpu_conf) --with-hwloc --without-psm2 --with-ofi --enable-mpi1-compatibility --enable-shared --enable-dlopen"
 	package_tar_rename=""
 
 	libtool_install $package_name $package_prefix $package_url "$package_build_extra_options" $package_tar_rename
